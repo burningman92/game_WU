@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGRANA Risk Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --panel: #13161e;
+    --border: rgba(255,255,255,0.07);
+    --gold: #f5c842;
+    --blue: #3b8bff;
+    --red: #ff4757;
+    --green: #2ed573;
+    --text: #e8eaf0;
+    --muted: rgba(232,234,240,0.4);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2rem 1rem 4rem;
+    overflow-x: hidden;
+  }
+
+  /* grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; width: 100%; max-width: 900px; }
+
+  /* HEADER */
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    animation: fadeDown 0.6s ease both;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 0.2rem 0.8rem;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    letter-spacing: 0.05em;
+    line-height: 1;
+    color: var(--text);
+  }
+  h1 span { color: var(--gold); }
+  .subtitle {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* TICKER */
+  .ticker {
+    background: rgba(245,200,66,0.08);
+    border: 1px solid rgba(245,200,66,0.2);
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    font-size: 0.72rem;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 2rem;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .ticker-item { animation: none; }
+  .ticker-item.up { color: var(--green); }
+  .ticker-item.down { color: var(--red); }
+
+  /* SCENARIO BOX */
+  .scenario {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.5s 0.2s ease both;
+  }
+  .scenario-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .scenario-text {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .scenario-text strong { color: var(--gold); }
+
+  /* METERS */
+  .meters {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.5s 0.3s ease both;
+  }
+  .meter-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+  }
+  .meter-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .meter-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.05em;
+  }
+  .meter-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* CHOICE CARDS */
+  .choice-section {
+    animation: fadeUp 0.5s 0.4s ease both;
+  }
+  .choice-header {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media(max-width: 600px) { .choices { grid-template-columns: 1fr; } .meters { grid-template-columns: 1fr 1fr; } }
+
+  .choice-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .choice-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .choice-card.blue-card::before { background: radial-gradient(circle at 50% 0%, rgba(59,139,255,0.12), transparent 70%); }
+  .choice-card.gold-card::before { background: radial-gradient(circle at 50% 0%, rgba(245,200,66,0.1), transparent 70%); }
+  .choice-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+  .choice-card:hover::before { opacity: 1; }
+  .choice-card.selected.blue-card { border-color: var(--blue); box-shadow: 0 0 20px rgba(59,139,255,0.2); }
+  .choice-card.selected.gold-card { border-color: var(--gold); box-shadow: 0 0 20px rgba(245,200,66,0.2); }
+  .choice-card.disabled { opacity: 0.4; pointer-events: none; }
+
+  .choice-num {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+  }
+  .choice-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.8rem;
+  }
+  .blue-card .choice-title { color: var(--blue); }
+  .gold-card .choice-title { color: var(--gold); }
+
+  .choice-instruments {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+  .instrument {
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 0.35rem 0.6rem;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    border-left: 2px solid rgba(255,255,255,0.1);
+  }
+  .blue-card .instrument { border-left-color: var(--blue); }
+  .gold-card .instrument { border-left-color: var(--gold); }
+
+  .choice-pros-cons {
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .pro { color: var(--green); }
+  .con { color: var(--red); }
+
+  /* CONFIRM BTN */
+  .confirm-btn {
+    width: 100%;
+    background: var(--gold);
+    color: #0d0f14;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.1em;
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .confirm-btn.active { opacity: 1; pointer-events: all; }
+  .confirm-btn.active:hover { background: #ffd84d; transform: translateY(-1px); }
+
+  /* RESULT */
+  .result-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13,15,20,0.92);
+    backdrop-filter: blur(10px);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 2rem;
+  }
+  .result-overlay.show { display: flex; }
+  .result-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 560px;
+    width: 100%;
+    text-align: left;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .result-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+  .result-subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .result-outcome {
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border-left: 3px solid var(--gold);
+  }
+  .result-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem;
+    letter-spacing: 0.05em;
+    text-align: center;
+    margin-bottom: 0.3rem;
+  }
+  .result-score-label {
+    text-align: center;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .result-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+  .btn-next {
+    background: var(--gold);
+    color: #0d0f14;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    padding: 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-next:hover { background: #ffd84d; }
+  .btn-retry {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    padding: 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-retry:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  /* ROUND INDICATOR */
+  .rounds {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    animation: fadeDown 0.5s 0.1s ease both;
+  }
+  .round-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: all 0.3s;
+  }
+  .round-dot.done { background: var(--green); border-color: var(--green); }
+  .round-dot.active { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+  /* FINAL SCREEN */
+  .final-box {
+    text-align: center;
+  }
+  .final-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 6rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes popIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+
+  /* READY SCREEN */
+  #ready-screen {
+    position: fixed; inset: 0; background: var(--bg); z-index: 150;
+    display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 2rem;
+  }
+  #ready-screen.hidden { display: none; }
+  .ready-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 3rem 2.5rem; max-width: 480px; width: 100%; text-align: center;
+    animation: popIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .ready-round-label {
+    font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 1rem;
+  }
+  .ready-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 4rem; letter-spacing: 0.08em;
+    color: var(--gold); line-height: 1; margin-bottom: 0.5rem;
+  }
+  .ready-player {
+    font-size: 1rem; color: var(--text); margin-bottom: 1.5rem; letter-spacing: 0.03em;
+  }
+  .ready-hint {
+    font-size: 0.78rem; color: var(--muted); line-height: 1.7;
+    margin-bottom: 2rem; letter-spacing: 0.02em;
+  }
+  .ready-hint strong { color: var(--gold); }
+  .ready-btn {
+    width: 100%; background: var(--gold); color: #0d0f14; border: none;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 0.1em;
+    padding: 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  }
+  .ready-btn:hover { background: #ffd84d; transform: translateY(-2px); }
+
+  /* NAME SCREEN hidden class */
+  #name-screen.hidden { display: none; }
+
+
+  #name-screen {
+    position: fixed; inset: 0; background: var(--bg); z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; padding: 2rem;
+  }
+  #name-screen.hidden { display: none; }
+  .name-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 3rem 2.5rem; max-width: 480px; width: 100%; text-align: center;
+    animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .name-box h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2.8rem; letter-spacing: 0.05em; color: var(--gold); margin-bottom: 0.3rem; }
+  .name-box p { font-size: 0.78rem; color: var(--muted); margin-bottom: 2rem; line-height: 1.6; letter-spacing: 0.04em; }
+  .name-input {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; color: var(--text); font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.1rem; padding: 0.9rem 1.2rem; text-align: center; outline: none;
+    transition: border-color 0.2s; margin-bottom: 1.2rem;
+  }
+  .name-input:focus { border-color: var(--gold); }
+  .name-input::placeholder { color: var(--muted); }
+  .name-start-btn {
+    width: 100%; background: var(--gold); color: #0d0f14; border: none;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.1em;
+    padding: 0.9rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 1rem;
+  }
+  .name-start-btn:hover { background: #ffd84d; transform: translateY(-2px); }
+  .name-lb-btn {
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; padding: 0.6rem 1.2rem;
+    border-radius: 6px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em;
+  }
+  .name-lb-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  /* TIMER */
+  .timer-bar-wrap {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.7rem 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center;
+    gap: 1rem; animation: fadeUp 0.5s 0.15s ease both;
+  }
+  .timer-label { font-size: 0.62rem; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+  .timer-track { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+  .timer-fill { height: 100%; border-radius: 2px; background: var(--green); transition: width 1s linear, background 1s; width: 100%; }
+  .timer-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; color: var(--green); min-width: 3.5rem; text-align: right; transition: color 0.5s; }
+
+  /* LEADERBOARD OVERLAY */
+  #lb-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(13,15,20,0.95);
+    backdrop-filter: blur(12px); z-index: 300; align-items: flex-start;
+    justify-content: center; padding: 2rem 1rem 4rem; overflow-y: auto;
+  }
+  #lb-overlay.show { display: flex; }
+  .lb-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 2.5rem; max-width: 640px; width: 100%; margin-top: 2rem;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .lb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+  .lb-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 0.05em; color: var(--gold); }
+  .lb-close {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; padding: 0.4rem 0.9rem;
+    border-radius: 6px; cursor: pointer; transition: all 0.2s;
+  }
+  .lb-close:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .lb-row {
+    display: grid; grid-template-columns: 2.5rem 1fr auto auto; align-items: center;
+    gap: 1rem; padding: 0.9rem 1rem; border-radius: 8px; margin-bottom: 0.5rem;
+    border: 1px solid var(--border); transition: background 0.2s;
+  }
+  .lb-row:hover { background: rgba(255,255,255,0.03); }
+  .lb-row.gold-row { border-color: var(--gold); background: rgba(245,200,66,0.06); }
+  .lb-row.silver-row { border-color: rgba(180,180,200,0.4); background: rgba(180,180,200,0.04); }
+  .lb-row.bronze-row { border-color: rgba(200,120,60,0.5); background: rgba(200,120,60,0.04); }
+  .lb-rank { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; text-align: center; color: var(--muted); }
+  .gold-row .lb-rank { color: var(--gold); }
+  .silver-row .lb-rank { color: #b4b4c8; }
+  .bronze-row .lb-rank { color: #c8783c; }
+  .lb-name { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.03em; }
+  .lb-meta { font-size: 0.65rem; color: var(--muted); margin-top: 0.15rem; }
+  .lb-time { font-size: 0.72rem; color: var(--muted); text-align: right; }
+  .lb-score-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; text-align: right; min-width: 5rem; }
+  .gold-row .lb-score-val { color: var(--gold); }
+  .lb-empty { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 3rem 0; letter-spacing: 0.05em; }
+  .lb-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1.5rem; }
+  .lb-clear-btn {
+    background: transparent; color: var(--red); border: 1px solid rgba(255,71,87,0.3);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; padding: 0.6rem;
+    border-radius: 6px; cursor: pointer; transition: all 0.2s;
+  }
+  .lb-clear-btn:hover { background: rgba(255,71,87,0.1); }
+  .lb-play-btn {
+    background: var(--gold); color: #0d0f14; border: none;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 0.08em;
+    padding: 0.6rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+  }
+  .lb-play-btn:hover { background: #ffd84d; }
+</style>
+</head>
+<body>
+<!-- NAME ENTRY SCREEN -->
+<div id="name-screen">
+  <div class="name-box">
+    <div class="tag" style="margin-bottom:1rem;">▸ AGRANA NEXT LEVEL // Risk Simulator</div>
+    <h2>BEREIT?</h2>
+    <p>Trage deinen Namen ein und starte das Spiel.<br>Je schneller du entscheidest, desto mehr Punkte bekommst du.<br><span style="color:var(--gold)">Am Ende kannst du deinen Score per Google Form absenden.</span></p>
+    <input class="name-input" id="player-name" type="text" placeholder="Dein Name..." maxlength="24" autocomplete="off" />
+    <button class="name-start-btn" onclick="startGame()">Spiel starten →</button>
+    <button class="name-lb-btn" onclick="showLeaderboard(true)">🏆 Leaderboard ansehen</button>
+  </div>
+</div>
+
+<!-- READY SCREEN (shown between name entry and each round) -->
+<div id="ready-screen" class="hidden">
+  <div class="ready-box">
+    <div class="ready-round-label" id="ready-round-label">Runde 1 von 3</div>
+    <div class="ready-title">BEREIT?</div>
+    <div class="ready-player" id="ready-player"></div>
+    <div class="ready-hint">Lies das Szenario genau und wähle deine Strategie.<br>Du hast <strong>90 Sekunden</strong> – die Zeit läuft erst nach dem Klick!</div>
+    <button class="ready-btn" onclick="beginRound()">▸ Runde starten</button>
+  </div>
+</div>
+
+<!-- LEADERBOARD OVERLAY -->
+<div id="lb-overlay">
+  <div class="lb-box">
+    <div class="lb-header">
+      <div class="lb-title">🏆 Leaderboard</div>
+      <button class="lb-close" onclick="closeLeaderboard()">✕ Schließen</button>
+    </div>
+    <div id="lb-rows"></div>
+    <div class="lb-actions">
+      <button class="lb-clear-btn" onclick="clearLeaderboard()">⚠ Leaderboard löschen</button>
+      <button class="lb-play-btn" onclick="closeLeaderboard()">Spielen →</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrapper">
+  <header>
+    <div class="tag">▸ AGRANA NEXT LEVEL // Risk Simulator</div>
+    <h1>RISK<span>MANAGER</span></h1>
+    <div class="subtitle">Treffe strategische Finanzierungsentscheidungen für AGRANA</div>
+  </header>
+
+  <div class="ticker">
+    <span class="ticker-item up">ZUCKER +2.3%</span>
+    <span class="ticker-item down">EURIBOR -0.4%</span>
+    <span class="ticker-item up">ENERGIE +5.1%</span>
+    <span class="ticker-item">USD/EUR 1.082</span>
+    <span class="ticker-item down">WEIZEN -1.2%</span>
+    <span class="ticker-item up">STÄRKE +0.8%</span>
+  </div>
+
+  <div class="rounds" id="rounds"></div>
+
+  <div class="timer-bar-wrap" id="timer-wrap">
+    <div class="timer-label">⏱ Zeit</div>
+    <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="timer-val" id="timer-val">60s</div>
+  </div>
+
+  <div class="scenario" id="scenario-box">
+    <div class="scenario-label">▸ Marktszenario</div>
+    <div class="scenario-text" id="scenario-text">Lade...</div>
+  </div>
+
+  <div class="meters" id="meters">
+    <div class="meter-card">
+      <div class="meter-label">Planungssicherheit</div>
+      <div class="meter-value" id="m-sicherheit" style="color: var(--blue)">50%</div>
+      <div class="meter-bar"><div class="meter-fill" id="mb-sicherheit" style="width:50%; background: var(--blue);"></div></div>
+    </div>
+    <div class="meter-card">
+      <div class="meter-label">Flexibilität</div>
+      <div class="meter-value" id="m-flex" style="color: var(--green)">50%</div>
+      <div class="meter-bar"><div class="meter-fill" id="mb-flex" style="width:50%; background: var(--green);"></div></div>
+    </div>
+    <div class="meter-card">
+      <div class="meter-label">Score</div>
+      <div class="meter-value" id="m-score" style="color: var(--gold)">0</div>
+      <div class="meter-bar"><div class="meter-fill" id="mb-score" style="width:0%; background: var(--gold);"></div></div>
+    </div>
+  </div>
+
+  <div class="choice-section">
+    <div class="choice-header">▸ Wähle deine Strategie</div>
+    <div class="choices" id="choices"></div>
+    <button class="confirm-btn" id="confirm-btn" onclick="confirmChoice()">Entscheidung bestätigen →</button>
+  </div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div class="result-overlay" id="result-overlay">
+  <div class="result-box" id="result-box">
+    <div class="result-title" id="result-title">Ergebnis</div>
+    <div class="result-subtitle" id="result-subtitle">Runde 1 von 3</div>
+    <div class="result-outcome" id="result-outcome"></div>
+    <div class="result-score" id="result-score-val"></div>
+    <div class="result-score-label">Punkte in dieser Runde</div>
+    <div class="result-btns">
+      <button class="btn-next" onclick="nextRound()">Nächste Runde →</button>
+      <button class="btn-retry" onclick="restartGame()">Neustart</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FORM_CONFIG = {
+  GOOGLE_FORM_VIEW_URL: 'https://docs.google.com/forms/d/e/1FAIpQLScytt_sl201re9aw9SdYy3pgwOlYWQvBtruu5Za2_QRBr617g/viewform',
+  ENTRY_NAME: 'entry.164970651',
+  ENTRY_SCORE: 'entry.938886940',
+  ENTRY_AVG_TIME: 'entry.1339092323',
+  ENTRY_GRADE: ''
+};
+
+const ROUNDS = [
+  {
+    scenario: `Die EZB signalisiert <strong>drei weitere Zinserhöhungen</strong> bis Jahresende. AGRANA trägt ein Kreditvolumen von €450 Mio. zu variablen Konditionen. Das "NEXT LEVEL"-Investitionsprogramm läuft 5 Jahre. Gleichzeitig steigen Zuckerpreise um 8%.`,
+    choices: [
+      {
+        id: 'A', class: 'blue-card', title: 'Zinssicherung',
+        num: 'Option 1 — Absicherung gegen steigende Zinsen',
+        instruments: ['Interest Rate Swap (IRS)', 'Interest Rate Cap'],
+        pro: '+ Fixe Planungsbasis für 5 Jahre', con: '– Kein Upside bei fallenden Zinsen',
+        outcome: {
+          good: `Richtige Wahl! Die EZB erhöhte tatsächlich 3x. Dein IRS fixierte die Zinskosten auf 3,2% statt der neuen 4,8%. AGRANA spart <strong>€7,2 Mio.</strong> an Zinskosten.`,
+          bad: `Solide, aber suboptimal: Du ignorierst die Korrelation zwischen steigenden Zuckerpreisen (+8%) und Margen. Ein integriertes Instrument hätte mehr Wert geschaffen.`,
+          score: 80, sicherheit: +25, flex: -10,
+        }
+      },
+      {
+        id: 'B', class: 'gold-card', title: 'Cross-Risk',
+        num: 'Option 2 — Commodity-linked Instrumente',
+        instruments: ['Commodity-linked Loan', 'Commodity-linked Swap'],
+        pro: '+ Zinsen sinken wenn Rohstoffpreise fallen', con: '– Höhere Komplexität, weniger planbar',
+        outcome: {
+          good: `Brillant! Der Commodity-linked Swap koppelt Finanzierungskosten direkt an Zuckerpreise. Da Zucker +8% stieg, erhöhten sich zwar die Zinsen – aber vollständig durch die Marge gedeckt. <strong>Perfekte Korrelation!</strong>`,
+          bad: `Riskant. Mit steigenden Rohstoffpreisen stiegen auch eure Zinsen – die Marge glich es nicht vollständig aus. Netto-Belastung: €2,1 Mio.`,
+          score: 95, sicherheit: +10, flex: +20,
+        }
+      }
+    ],
+    bestChoice: 'B',
+  },
+  {
+    scenario: `Rezessionsangst: Zuckerpreis bricht um <strong>-15%</strong> ein, Energiepreise folgen (-10%). Die EZB dreht auf Senkungsmodus. AGRANA braucht kurzfristig €80 Mio. Liquidität für Lagerauffüllung.`,
+    choices: [
+      {
+        id: 'A', class: 'blue-card', title: 'Zinssicherung',
+        num: 'Option 1 — Rate Caps & Swaps',
+        instruments: ['Interest Rate Cap (erneuern)', 'Floor-Schutz via Swap'],
+        pro: '+ Schutz falls Zinsen wieder steigen', con: '– Kein Vorteil bei fallenden Rohstoffen',
+        outcome: {
+          good: `Defensiv, aber begrenzt. Der Cap schützte vor einem theoretischen Zinsanstieg, der nicht eintrat. Hedging-Kosten (Prämie: €0.9 Mio.) waren unnötig.`,
+          bad: `Fehlentscheidung. Zinsen sanken, Rohstoffpreise sanken – du hattest Zinsschutz aber keinen Margenschutz. Netto-Impact: -€3,4 Mio.`,
+          score: 30, sicherheit: +5, flex: -15,
+        }
+      },
+      {
+        id: 'B', class: 'gold-card', title: 'Cross-Risk',
+        num: 'Option 2 — Commodity-linked Instrumente',
+        instruments: ['Commodity-linked Loan (Zucker)', 'Energie-Swap'],
+        pro: '+ Sinkende Rohstoffe = sinkende Zinsen', con: '– Komplexere Buchhaltung nötig',
+        outcome: {
+          good: `Perfekt! Sinkende Zuckerpreise bedeuteten automatisch sinkende Finanzierungskosten. Zinssatz von 3.8% auf 2.1% reduziert. Das kompensiert den Margendruck fast vollständig. <strong>+€5.4 Mio. Nettoeffekt.</strong>`,
+          bad: `Gute Intuition, falsche Umsetzung. Der Energie-Swap war richtig, aber der Zucker-Link fehlte. Partial credit: +€1.8 Mio.`,
+          score: 100, sicherheit: +15, flex: +25,
+        }
+      }
+    ],
+    bestChoice: 'B',
+  },
+  {
+    scenario: `Stagflation-Schock: Zinsen <strong>explodieren auf 6%</strong>, gleichzeitig kollabieren Zuckerpreise auf historischen Tiefs (-22%). AGRANA steht vor dem schlimmsten beider Welten. Letzte Entscheidung!`,
+    choices: [
+      {
+        id: 'A', class: 'blue-card', title: 'Zinssicherung',
+        num: 'Option 1 — Maximale Zinssicherung',
+        instruments: ['IRS (gesamtes Portfolio)', 'Cap bei 4%'],
+        pro: '+ Fixiert Zinsen bei günstigem Level', con: '– Sinkende Rohstoffpreise unberücksichtigt',
+        outcome: {
+          good: `Gute Reaktion! Du fixiertest das Zinsrisiko vor dem Anstieg auf 6%. Einsparung: <strong>€12.6 Mio.</strong> Rohstoffdruck bleibt, aber die Finanzierungsseite ist gerettet.`,
+          bad: `Zu spät. Teile des Portfolios tragen jetzt 6%-Zinsen. Schaden: €4.2 Mio.`,
+          score: 75, sicherheit: +30, flex: -20,
+        }
+      },
+      {
+        id: 'B', class: 'gold-card', title: 'Hybridlösung',
+        num: 'Option 2 — IRS + Commodity-Link kombiniert',
+        instruments: ['IRS (70% des Volumens)', 'Commodity-linked Swap (30%)'],
+        pro: '+ Zinsfixierung + Margenpuffer kombiniert', con: '– Komplexe Steuerung nötig',
+        outcome: {
+          good: `Meisterhaft! Die 70/30-Kombination deckt beide Risiken ab. IRS fixiert Hauptzinslast, der Commodity-Swap senkt automatisch bei fallendem Zucker. Gesamteffekt: <strong>+€15.8 Mio.</strong>`,
+          bad: `Guter Ansatz, Timing zu langsam. Hybridsicherung kam nach dem Peak. Trotzdem: +€6.1 Mio. Netto.`,
+          score: 100, sicherheit: +20, flex: +15,
+        }
+      }
+    ],
+    bestChoice: 'B',
+  }
+];
+
+// ── State ──────────────────────────────────────────────
+let currentRound = 0, selectedChoice = null;
+let totalScore = 0, sicherheit = 50, flex = 50;
+let playerName = '';
+let gameStartTime = 0, roundStartTime = 0;
+let totalTimePenalty = 0;   // seconds used across all rounds
+let timerInterval = null;
+const ROUND_TIME = 90;       // seconds per round
+
+// ── Name screen ────────────────────────────────────────
+document.getElementById('player-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startGame();
+});
+
+function startGame() {
+  const name = document.getElementById('player-name').value.trim();
+  if (!name) { document.getElementById('player-name').focus(); return; }
+  playerName = name;
+  document.getElementById('name-screen').classList.add('hidden');
+  gameStartTime = Date.now();
+  // Reset state
+  currentRound = 0; selectedChoice = null;
+  totalScore = 0; sicherheit = 50; flex = 50;
+  totalTimePenalty = 0;
+  updateMeters();
+  showReadyScreen();
+}
+
+function showReadyScreen() {
+  stopTimer();
+  document.getElementById('ready-round-label').textContent = `Runde ${currentRound + 1} von ${ROUNDS.length}`;
+  document.getElementById('ready-player').textContent = `▸ Spieler: ${playerName}`;
+  document.getElementById('ready-screen').classList.remove('hidden');
+}
+
+function beginRound() {
+  document.getElementById('ready-screen').classList.add('hidden');
+  renderRound();
+}
+
+// ── Game ───────────────────────────────────────────────
+function initGame() {
+  currentRound = 0; selectedChoice = null;
+  totalScore = 0; sicherheit = 50; flex = 50;
+  totalTimePenalty = 0;
+  updateMeters();
+}
+
+function renderRound() {
+  const rd = ROUNDS[currentRound];
+  document.getElementById('rounds').innerHTML = ROUNDS.map((_, i) =>
+    `<div class="round-dot ${i < currentRound ? 'done' : i === currentRound ? 'active' : ''}"></div>`
+  ).join('');
+  document.getElementById('scenario-text').innerHTML = rd.scenario;
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = rd.choices.map(c => `
+    <div class="choice-card ${c.class}" id="card-${c.id}" onclick="selectChoice('${c.id}')">
+      <div class="choice-num">${c.num}</div>
+      <div class="choice-title">${c.title}</div>
+      <div class="choice-instruments">${c.instruments.map(i => `<div class="instrument">▸ ${i}</div>`).join('')}</div>
+      <div class="choice-pros-cons">
+        <div class="pro">${c.pro}</div>
+        <div class="con">${c.con}</div>
+      </div>
+    </div>
+  `).join('');
+
+  selectedChoice = null;
+  document.getElementById('confirm-btn').classList.remove('active');
+  startRoundTimer();
+}
+
+// ── Timer ──────────────────────────────────────────────
+function startRoundTimer() {
+  clearInterval(timerInterval);
+  roundStartTime = Date.now();
+  updateTimerUI(ROUND_TIME);
+
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - roundStartTime) / 1000;
+    const remaining = Math.max(0, ROUND_TIME - elapsed);
+    updateTimerUI(remaining);
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      // auto-confirm if selected, else pick worst
+      if (!selectedChoice) {
+        const rd = ROUNDS[currentRound];
+        selectChoice(rd.choices[0].id);
+      }
+      confirmChoice();
+    }
+  }, 200);
+}
+
+function stopTimer() { clearInterval(timerInterval); }
+
+function updateTimerUI(remaining) {
+  const pct = (remaining / ROUND_TIME) * 100;
+  const fill = document.getElementById('timer-fill');
+  const val = document.getElementById('timer-val');
+  fill.style.width = pct + '%';
+  fill.style.background = remaining > 45 ? 'var(--green)' : remaining > 20 ? 'var(--gold)' : 'var(--red)';
+  val.style.color = remaining > 45 ? 'var(--green)' : remaining > 20 ? 'var(--gold)' : 'var(--red)';
+  val.textContent = Math.ceil(remaining) + 's';
+}
+
+// ── Select ─────────────────────────────────────────────
+function selectChoice(id) {
+  if (selectedChoice === id) {
+    selectedChoice = null;
+    document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected', 'disabled'));
+    document.getElementById('confirm-btn').classList.remove('active');
+    return;
+  }
+  selectedChoice = id;
+  document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected', 'disabled'));
+  document.getElementById('card-' + id).classList.add('selected');
+  document.querySelectorAll('.choice-card:not(#card-' + id + ')').forEach(c => c.classList.add('disabled'));
+  document.getElementById('confirm-btn').classList.add('active');
+}
+
+// ── Confirm ────────────────────────────────────────────
+function confirmChoice() {
+  if (!selectedChoice) return;
+  stopTimer();
+
+  const secondsUsed = Math.min(ROUND_TIME, (Date.now() - roundStartTime) / 1000);
+  totalTimePenalty += secondsUsed;
+
+  const rd = ROUNDS[currentRound];
+  const choice = rd.choices.find(c => c.id === selectedChoice);
+  const isOptimal = selectedChoice === rd.bestChoice;
+  const outcome = choice.outcome;
+
+  // Time bonus: up to 20 extra points for fast decision (< 10s = full, scales down)
+  const timeBonus = Math.round(Math.max(0, (1 - secondsUsed / ROUND_TIME)) * 20);
+  const basePts = isOptimal ? outcome.score : Math.round(outcome.score * 0.4);
+  const pts = basePts + timeBonus;
+
+  totalScore += pts;
+  sicherheit = Math.min(100, Math.max(0, sicherheit + outcome.sicherheit));
+  flex = Math.min(100, Math.max(0, flex + outcome.flex));
+  updateMeters();
+
+  document.getElementById('result-title').textContent = isOptimal ? '✓ Starke Entscheidung' : '⚠ Suboptimal';
+  document.getElementById('result-title').style.color = isOptimal ? 'var(--green)' : 'var(--gold)';
+  document.getElementById('result-subtitle').textContent = `Runde ${currentRound + 1} von ${ROUNDS.length} — ${choice.title} · ⏱ ${Math.round(secondsUsed)}s`;
+  document.getElementById('result-outcome').innerHTML = (isOptimal ? outcome.good : outcome.bad) +
+    `<br><br><span style="font-size:.75rem;color:var(--muted);">Basispunkte: ${basePts} · Zeitbonus: +${timeBonus}</span>`;
+  document.getElementById('result-score-val').textContent = '+' + pts;
+  document.getElementById('result-score-val').style.color = isOptimal ? 'var(--green)' : 'var(--gold)';
+
+  const nextBtn = document.querySelector('.btn-next');
+  nextBtn.textContent = currentRound >= ROUNDS.length - 1 ? 'Ergebnis sehen →' : 'Nächste Runde →';
+
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function nextRound() {
+  document.getElementById('result-overlay').classList.remove('show');
+  currentRound++;
+  if (currentRound >= ROUNDS.length) showFinal();
+  else showReadyScreen();
+}
+
+// ── Final + Leaderboard save ───────────────────────────
+async function showFinal() {
+  const pct = Math.round((totalScore / (ROUNDS.length * 100)) * 100);
+  const grade = pct >= 85 ? ['AAA', 'var(--green)', 'Exzellenter Risikomanager!']
+              : pct >= 60 ? ['B+',  'var(--gold)',  'Solide Strategie mit Optimierungspotenzial.']
+              :              ['C',   'var(--red)',   'Commodity-Korrelationen stärker beachten!'];
+
+  const avgTime = Math.round(totalTimePenalty / ROUNDS.length);
+
+  // Save to leaderboard
+  await saveScore(playerName, totalScore, avgTime, grade[0]);
+
+  document.getElementById('result-overlay').classList.add('show');
+  document.getElementById('result-box').innerHTML = `
+    <div class="final-box">
+      <div class="tag" style="color:${grade[1]};border-color:${grade[1]};">▸ Spiel beendet — ${playerName}</div>
+      <div class="result-score" style="color:${grade[1]};font-size:5rem;margin-top:1rem;">${grade[0]}</div>
+      <div class="result-score-label">Rating</div>
+      <div class="result-score" style="color:var(--text);font-size:3rem;">${totalScore} Pkt</div>
+      <div class="result-score-label" style="margin-bottom:.3rem;">Gesamtpunkte · Ø ${avgTime}s / Runde</div>
+      <div class="result-outcome" style="margin:1.2rem 0;">${grade[2]}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.5rem;font-size:.72rem;color:var(--muted);">
+        <div style="padding:.8rem;background:rgba(255,255,255,.03);border-radius:6px;">
+          Planungssicherheit<br><span style="color:var(--blue);font-family:'Bebas Neue';font-size:1.5rem;">${sicherheit}%</span>
+        </div>
+        <div style="padding:.8rem;background:rgba(255,255,255,.03);border-radius:6px;">
+          Flexibilität<br><span style="color:var(--green);font-family:'Bebas Neue';font-size:1.5rem;">${flex}%</span>
+        </div>
+      </div>
+      <div style="margin-bottom:.8rem;">
+        <button class="btn-next" style="width:100%;" onclick="submitScoreToGoogleForm('${playerName.replace(/'/g, "\'")}', ${totalScore}, ${avgTime}, '${grade[0]}')">📩 Score absenden</button>
+      </div>
+    </div>
+  `;
+}
+
+// ── Storage helpers (lokal im Browser) ───────────────────
+async function loadScores() {
+  try {
+    const raw = localStorage.getItem('agrana-leaderboard');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+async function saveScore(name, score, avgTime, grade) {
+  try {
+    const scores = await loadScores();
+    scores.push({ name, score, avgTime, grade, date: new Date().toLocaleDateString('de-DE') });
+    scores.sort((a, b) => b.score - a.score || a.avgTime - b.avgTime);
+    const top = scores.slice(0, 20);
+    localStorage.setItem('agrana-leaderboard', JSON.stringify(top));
+  } catch(e) { console.error('Storage error:', e); }
+}
+
+async function clearLeaderboard() {
+  if (!confirm('Leaderboard wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
+  localStorage.removeItem('agrana-leaderboard');
+  renderLeaderboard([]);
+}
+
+function buildGoogleFormUrl(name, score, avgTime, grade) {
+  if (!FORM_CONFIG.GOOGLE_FORM_VIEW_URL) return '';
+  const url = new URL(FORM_CONFIG.GOOGLE_FORM_VIEW_URL);
+  url.searchParams.set('usp', 'pp_url');
+  if (FORM_CONFIG.ENTRY_NAME) url.searchParams.set(FORM_CONFIG.ENTRY_NAME, name);
+  if (FORM_CONFIG.ENTRY_SCORE) url.searchParams.set(FORM_CONFIG.ENTRY_SCORE, score);
+  if (FORM_CONFIG.ENTRY_AVG_TIME) url.searchParams.set(FORM_CONFIG.ENTRY_AVG_TIME, String(parseInt(avgTime, 10) || 0));
+  if (FORM_CONFIG.ENTRY_GRADE) url.searchParams.set(FORM_CONFIG.ENTRY_GRADE, grade);
+  return url.toString();
+}
+
+function submitScoreToGoogleForm(name, score, avgTime, grade) {
+  const formUrl = buildGoogleFormUrl(name, score, avgTime, grade);
+  if (!formUrl) {
+    alert('Bitte zuerst in FORM_CONFIG die Google-Form-URL und entry-IDs eintragen.');
+    return;
+  }
+  window.open(formUrl, '_blank');
+}
+
+// ── Leaderboard UI ─────────────────────────────────────
+let lbFromNameScreen = false;
+
+async function showLeaderboard(fromNameScreen) {
+  lbFromNameScreen = fromNameScreen;
+  document.getElementById('lb-overlay').classList.add('show');
+  document.getElementById('lb-rows').innerHTML = `<div class="lb-empty">Lade...</div>`;
+  const scores = await loadScores();
+  renderLeaderboard(scores);
+}
+
+function renderLeaderboard(scores) {
+  const rowsEl = document.getElementById('lb-rows');
+  if (!scores.length) {
+    rowsEl.innerHTML = `<div class="lb-empty">Noch keine Einträge. Sei der Erste!</div>`;
+    return;
+  }
+  const medals = ['gold-row', 'silver-row', 'bronze-row'];
+  const rankSymbols = ['🥇', '🥈', '🥉'];
+  rowsEl.innerHTML = scores.map((s, i) => `
+    <div class="lb-row ${medals[i] || ''}">
+      <div class="lb-rank">${i < 3 ? rankSymbols[i] : '#' + (i+1)}</div>
+      <div>
+        <div class="lb-name">${escHtml(s.name)}</div>
+        <div class="lb-meta">${s.grade} · ${s.date}</div>
+      </div>
+      <div class="lb-time">Ø ${s.avgTime}s</div>
+      <div class="lb-score-val">${s.score}</div>
+    </div>
+  `).join('');
+}
+
+function closeLeaderboard() {
+  document.getElementById('lb-overlay').classList.remove('show');
+  if (lbFromNameScreen) {
+    // reset result box if needed
+    document.getElementById('result-box').innerHTML = `
+      <div class="result-title" id="result-title">Ergebnis</div>
+      <div class="result-subtitle" id="result-subtitle">Runde 1 von 3</div>
+      <div class="result-outcome" id="result-outcome"></div>
+      <div class="result-score" id="result-score-val"></div>
+      <div class="result-score-label">Punkte in dieser Runde</div>
+      <div class="result-btns">
+        <button class="btn-next" onclick="nextRound()">Nächste Runde →</button>
+        <button class="btn-retry" onclick="restartGame()">Neustart</button>
+      </div>
+    `;
+  }
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Restart ────────────────────────────────────────────
+function restartGame() {
+  stopTimer();
+  document.getElementById('result-overlay').classList.remove('show');
+  document.getElementById('lb-overlay').classList.remove('show');
+  document.getElementById('ready-screen').classList.add('hidden');
+  document.getElementById('result-box').innerHTML = `
+    <div class="result-title" id="result-title">Ergebnis</div>
+    <div class="result-subtitle" id="result-subtitle">Runde 1 von 3</div>
+    <div class="result-outcome" id="result-outcome"></div>
+    <div class="result-score" id="result-score-val"></div>
+    <div class="result-score-label">Punkte in dieser Runde</div>
+    <div class="result-btns">
+      <button class="btn-next" onclick="nextRound()">Nächste Runde →</button>
+      <button class="btn-retry" onclick="restartGame()">Neustart</button>
+    </div>
+  `;
+  document.getElementById('player-name').value = '';
+  document.getElementById('name-screen').classList.remove('hidden');
+}
+
+function updateMeters() {
+  document.getElementById('m-sicherheit').textContent = sicherheit + '%';
+  document.getElementById('mb-sicherheit').style.width = sicherheit + '%';
+  document.getElementById('m-flex').textContent = flex + '%';
+  document.getElementById('mb-flex').style.width = flex + '%';
+  const scorePct = Math.min(100, Math.round(totalScore / (ROUNDS.length * 120) * 100));
+  document.getElementById('m-score').textContent = totalScore;
+  document.getElementById('mb-score').style.width = scorePct + '%';
+}
+
+// Ticker animation
+setInterval(() => {
+  document.querySelectorAll('.ticker-item').forEach(el => {
+    el.classList.toggle('up', Math.random() > 0.4);
+    el.classList.toggle('down', Math.random() <= 0.4);
+  });
+}, 3000);
+</script>
+</body>
+</html>
